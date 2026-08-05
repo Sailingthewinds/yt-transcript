@@ -1,12 +1,22 @@
 {
   "manifest_version": 3,
   "name": "YT Transcript",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A Transcript button next to Share. One click, and the whole transcript is on your clipboard.",
   "permissions": ["clipboardWrite", "scripting"],
   "host_permissions": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
-    "default_title": "Copy transcript"
+    "default_title": "Copy transcript",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
