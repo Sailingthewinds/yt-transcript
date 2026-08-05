@@ -1,93 +1,81 @@
 # YT Transcript
 
-**A Transcript button, right where Share and Save already are. One click, and the
-whole thing is on your clipboard.**
+A Chrome/Brave extension that adds a **Transcript** button to YouTube's action row,
+next to Share and Save. Clicking it copies the full transcript to your clipboard as
+clean text.
 
----
-
-You know the dance. Open the description. Find "Show transcript." Scroll the panel.
-Drag-select a thousand lines while the page fights you. Paste it somewhere, then spend
-a minute picking timestamps out by hand.
-
-Worse, on a long video that select-all quietly lies to you — YouTube only keeps a
-window of rows in the DOM, so you copy a fraction and don't find out until the text is
-already in your notes.
-
-This replaces all of it with one click and clean prose.
+The built-in alternative is to open the description, click "Show transcript", scroll the
+panel, select the text, copy it, and remove the timestamps by hand. On long videos that
+selection is also unreliable, because YouTube only keeps part of the transcript list in
+the page at a time, so selecting all of it can return a fraction of the text.
 
 ## Install
 
-1. Download this repo — **Code ▸ Download ZIP**, then unzip. Or clone it.
-2. Open `chrome://extensions` (or `brave://extensions`).
-3. Turn on **Developer mode**, top right.
-4. **Load unpacked**, and pick the folder.
+1. Download this repo: **Code ▸ Download ZIP**, then unzip. Or clone it.
+2. Open `chrome://extensions` or `brave://extensions`.
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the folder.
 
-Open any video. The **Transcript** button is sitting next to Share.
+## Usage
 
-## Using it
+Open a video and click **Transcript** in the row with Share and Save. A short
+confirmation appears with the word count.
 
-Click it. A toast confirms the copy and the word count. Paste.
+Two alternatives do the same thing: the extension's toolbar icon, and a keyboard
+shortcut you can assign at `chrome://extensions/shortcuts`.
 
-There's also a toolbar icon, and you can bind a key at `chrome://extensions/shortcuts`
-if you'd rather never touch the mouse. Both do the same thing.
+Supports standard videos, Shorts, and live replays. Uses human-written captions when
+they exist and auto-generated ones otherwise. Output has no timestamps or speaker
+markers, so it can be pasted directly into notes or a language model.
 
-It works on regular videos, Shorts, and live replays. It prefers human-written captions
-and falls back to auto-generated ones. Output is clean prose — no timestamps, no
-`[Music]`, nothing to strip before pasting into an LLM.
+## Permissions
 
-## Why this one works
+- `youtube.com` — required to read the caption track. The extension has no access to
+  any other site.
+- `clipboardWrite` — required to copy the text.
 
-Most transcript scripts and extensions are quietly broken, and they all break the same
-way. The obvious approach — read the caption URL out of the watch page, then fetch it —
-now returns **HTTP 200 with an empty body**. Not an error. An empty success. So the tool
-reports nothing wrong and hands you nothing.
+There is no account, no configuration, and no analytics. Nothing runs in the background;
+code executes only when you click. The single network request goes to YouTube.
 
-This one asks YouTube's internal player endpoint for the caption track using an Android
-client context, which isn't gated the same way.
+## Limitations
 
-There's a second trap underneath it. Auto-generated captions don't hold their text where
-you'd expect: half the elements are empty placeholders for the rolling-caption effect,
-and the actual words live in child nodes. Read them the natural way and you get a
-transcript that is confidently, silently empty.
+Private, members-only, and age-restricted videos cannot be read. Videos with captions
+disabled have no transcript to fetch. Both cases show an explanatory message instead of
+copying nothing.
 
-Both were found by testing against real videos, not by reading documentation. There
-isn't any — this is an internal API.
+## How it works
 
-## What it costs you
+The straightforward approach — reading the caption URL from the watch page HTML and
+fetching it — no longer works. That request now returns HTTP 200 with an empty body, so
+tools built this way appear to succeed while returning nothing. This is why many
+existing transcript scripts and extensions are broken.
 
-Two permissions, both narrow:
+Instead, this extension requests the caption track from YouTube's internal player
+endpoint using an Android client context, which is not restricted in the same way.
 
-- **youtube.com** — so it can read the caption track. It cannot see any other tab.
-- **clipboard** — so it can hand you the text.
+Parsing has one non-obvious requirement. In auto-generated caption XML, roughly half the
+`<p>` elements are empty placeholders used for the rolling-caption effect, and the text
+of the remaining elements is held in `<s>` child nodes rather than directly. Reading
+`textContent` per element and discarding blanks handles both cases; reading the elements
+directly returns an empty transcript.
 
-No account. No settings. No telemetry. No background process — nothing runs until you
-click. The only network request it makes is to YouTube, the same one your browser was
-already going to make.
-
-## What it won't do
-
-Private, members-only, and age-restricted videos are out of reach. Videos with captions
-genuinely disabled have nothing to fetch. In both cases you get a clear message rather
-than an empty clipboard.
-
-## The whole thing
-
-Four files. Around 250 lines. No build step, no dependencies, no bundler, no framework.
-You can read all of it in two minutes, which is the point — you're granting it access to
-a site you're signed into, and you should be able to check what it does.
+## Files
 
 ```
-manifest.json   permissions and wiring
-content.js      fetch, parse, copy, the on-page button
-background.js   toolbar icon and keyboard shortcut
+manifest.json    30 lines   permissions and configuration
+content.js      245 lines   fetch, parse, copy, on-page button
+background.js    56 lines   toolbar icon and keyboard shortcut
 ```
 
-## If it ever breaks
+No build step and no dependencies. The extension has access to a site you are signed
+into, so the source is kept short enough to audit directly.
 
-It depends on an undocumented internal API, so one day it will. When transcripts stop
-resolving, open `content.js` and bump `CLIENT_VERSION` at the top to a current YouTube
-Android app version. That's almost always the entire fix.
+## If it stops working
+
+This depends on an undocumented internal API and will eventually break. When transcripts
+stop resolving, update `CLIENT_VERSION` at the top of `content.js` to a current YouTube
+Android app version. That is usually the only change needed.
 
 ## License
 
-MIT — use it, change it, ship it in something else. Just keep the copyright line.
+MIT
