@@ -18,11 +18,17 @@ the page at a time, so selecting all of it can return a fraction of the text.
 
 ## Usage
 
-Open a video and click **Transcript** in the row with Share and Save. A short
-confirmation appears with the word count.
+Any of these copies the transcript. A short confirmation appears with the word count.
 
-Two alternatives do the same thing: the extension's toolbar icon, and a keyboard
-shortcut you can assign at `chrome://extensions/shortcuts`.
+- Click **Transcript** in the row with Share and Save.
+- Press **Cmd+Shift+Y** or **Option+Shift+Y** while the video page has focus
+  (Ctrl instead of Cmd on Windows and Linux).
+- Click the extension's toolbar icon.
+
+macOS assigns Cmd+Shift+Y to a built-in service, and some dictation and clipboard
+utilities claim it as well. If it does nothing, use Option+Shift+Y, or assign your own
+key at `chrome://extensions/shortcuts`. A key assigned there is registered by the
+browser rather than the page, so it also works when focus is elsewhere.
 
 Supports standard videos, Shorts, and live replays. Uses human-written captions when
 they exist and auto-generated ones otherwise. Output has no timestamps or speaker
