@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Transcript",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A Transcript button next to Share. One click, and the whole transcript is on your clipboard.",
   "permissions": ["clipboardWrite", "scripting"],
   "host_permissions": ["*://www.youtube.com/*", "*://m.youtube.com/*"],

@@ -51,25 +51,45 @@ copying nothing.
 
 ## How it works
 
-The straightforward approach — reading the caption URL from the watch page HTML and
-fetching it — no longer works. That request now returns HTTP 200 with an empty body, so
-tools built this way appear to succeed while returning nothing. This is why many
-existing transcript scripts and extensions are broken.
+Reading the caption URL out of the page and fetching it directly mostly does not work
+any more. Those URLs now carry an `exp=xpe` flag, and when it is set the timedtext
+endpoint answers every programmatic request with HTTP 200 and an empty body — including
+requests carrying the cookies of a signed-in browser. Clearing it requires a `pot`
+proof-of-origin token, minted by YouTube's BotGuard inside the page's own JavaScript.
+An extension can neither mint one nor borrow one.
 
-Instead, this extension requests the caption track from YouTube's internal player
-endpoint using an Android client context, which is not restricted in the same way.
+Impersonating the YouTube Android app used to route around this, and earlier versions of
+this extension did exactly that. It is now the thing that breaks first: the real app
+ships an attestation token, a browser `fetch` cannot produce one, and YouTube answers a
+forged client with "Sign in to confirm you're not a bot." That message is a refusal, not
+a prompt — there is nothing to sign in to, and signing in does not clear it. Whether it
+fires depends on how much the profile and IP are trusted, which is why the same build
+could work on one machine and fail on another.
 
-Parsing has one non-obvious requirement. In auto-generated caption XML, roughly half the
-`<p>` elements are empty placeholders used for the rolling-caption effect, and the text
-of the remaining elements is held in `<s>` child nodes rather than directly. Reading
-`textContent` per element and discarding blanks handles both cases; reading the elements
-directly returns an empty transcript.
+So the extension does not make a gated request at all. It drives YouTube's own transcript
+panel — the one behind "Show transcript" — and reads the rendered segments out of the
+page, then restores the panel to how it was found. YouTube fetched that data for itself,
+with its own token, so the rule is simply: if you can see a transcript, this can copy it.
+There is nothing for bot detection to flag, and it behaves the same on a profile that has
+never signed in.
+
+The panel is worth using for a second reason. Dragging a selection across it returns only
+a fraction of a long transcript, which is the limitation this extension was written to
+avoid — but that is a clipboard limitation, not a rendering one. Every segment is present
+in the DOM and can be read.
+
+Videos with captions but no transcript panel fall back to the direct caption fetch, which
+still succeeds where the `exp=xpe` flag is absent. That path has one non-obvious parsing
+requirement: in auto-generated caption XML, roughly half the `<p>` elements are empty
+placeholders used for the rolling-caption effect, and the text of the remaining elements
+is held in `<s>` child nodes rather than directly. Reading `textContent` per element and
+discarding blanks handles both cases.
 
 ## Files
 
 ```
-manifest.json    30 lines   permissions and configuration
-content.js      245 lines   fetch, parse, copy, on-page button
+manifest.json    40 lines   permissions and configuration
+content.js      480 lines   read, parse, copy, on-page button
 background.js    56 lines   toolbar icon and keyboard shortcut
 ```
 
@@ -78,9 +98,13 @@ into, so the source is kept short enough to audit directly.
 
 ## If it stops working
 
-This depends on an undocumented internal API and will eventually break. When transcripts
-stop resolving, update `CLIENT_VERSION` at the top of `content.js` to a current YouTube
-Android app version. That is usually the only change needed.
+This reads YouTube's own markup, so it breaks when that markup is renamed rather than
+when an API changes. The selectors to check are `PANEL_SEL` and `SEGMENT_SEL` in
+`content.js`; open the transcript panel yourself, inspect a line, and update them to
+match.
+
+If the transcript panel has stopped opening for you in plain YouTube too, the extension
+cannot help — it has no path that YouTube itself does not have.
 
 ## License
 
